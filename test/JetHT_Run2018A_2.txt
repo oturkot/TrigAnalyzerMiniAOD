@@ -1,0 +1,2 @@
+root://cms-xrd-global.cern.ch//store/data/Run2018A/JetHT/MINIAOD/PromptReco-v2/000/316/239/00000/02904165-4259-E811-AC97-FA163EB783E7.root
+root://cms-xrd-global.cern.ch//store/data/Run2018A/JetHT/MINIAOD/PromptReco-v2/000/316/239/00000/0642CF8E-4859-E811-B0D4-FA163EA6A454.root
