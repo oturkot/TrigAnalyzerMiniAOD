@@ -146,6 +146,7 @@ TrigAnalyzerMiniAOD::TrigAnalyzerMiniAOD(const edm::ParameterSet& ps)
   // Trigger bits:
   for(size_t i=0; i < stTriggNames_.size(); ++i) {
     blTriggBits_[i] = false;
+    idTriggEleAll_.push_back(i);
   }
   
   if (verbose_) {
@@ -273,26 +274,30 @@ TrigAnalyzerMiniAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
 void TrigAnalyzerMiniAOD::branchesEvent(TTree* tree) {
   
-  tree->Branch("run",         &run_);
-  tree->Branch("event",       &event_);
-  tree->Branch("lumis",       &lumis_);
-  tree->Branch("isData",      &isData_);
+  tree->Branch("run",          &run_);
+  tree->Branch("event",        &event_);
+  tree->Branch("lumis",        &lumis_);
+  tree->Branch("isData",       &isData_);
   
-  tree->Branch("nEle",        &nEle_);
-  tree->Branch("elePt",       &elePt_);
+  tree->Branch("nEle",         &nEle_);
+  tree->Branch("elePt",        &elePt_);
+  tree->Branch("eleEta",       &eleEta_);
   
-  tree->Branch("nMu",         &nMu_);
-  tree->Branch("muPt",        &muPt_);
+  tree->Branch("nMu",          &nMu_);
+  tree->Branch("muPt",         &muPt_);
+  tree->Branch("muEta",        &muEta_);
   
-  tree->Branch("nLep",        &nLep_);
-  tree->Branch("lepPt",       &lepPt_);
+  tree->Branch("nLep",         &nLep_);
+  tree->Branch("lepPt",        &lepPt_);
+  tree->Branch("lepEta",       &lepEta_);
   
-  tree->Branch("nJet30",      &nJet_);
-  tree->Branch("leadJet30Pt", &leadJetPt_);
+  tree->Branch("nJet30",       &nJet_);
+  tree->Branch("leadJet30Pt",  &leadJetPt_);
+  tree->Branch("leadJet30Eta", &leadJetEta_);
   
-  tree->Branch("MET",         &MET_);
-  tree->Branch("LT",          &LT_);
-  tree->Branch("HT",          &HT_);
+  tree->Branch("MET",          &MET_);
+  tree->Branch("LT",           &LT_);
+  tree->Branch("HT",           &HT_);
   
   for(size_t i=0; i < stTriggNames_.size(); ++i) {
     tree->Branch(stTriggNames_[i].c_str(),      &(blTriggBits_[i]));
@@ -312,6 +317,7 @@ bool TrigAnalyzerMiniAOD::fillEvent(const edm::Event& e, const edm::EventSetup& 
   
   nEle_      = 0;
   elePt_     = -10.0;
+  eleEta_    = -5.0;
   ROOT::Math::PtEtaPhiEVector eleP4;   // used in jets selection
   edm::Handle<edm::View<pat::Electron> > electronHandle;
   e.getByToken(electronCollection_, electronHandle);
@@ -324,12 +330,14 @@ bool TrigAnalyzerMiniAOD::fillEvent(const edm::Event& e, const edm::EventSetup& 
   if (nEle_ > 0) {
     edm::View<pat::Electron>::const_iterator iEle = electronHandle->begin();
     elePt_   = iEle->pt();
+    eleEta_  = iEle->eta();
     eleP4    = iEle->p4();
   }
   
   
   nMu_       = 0;
   muPt_      = -10.0;
+  muEta_     = -5.0;
   ROOT::Math::PtEtaPhiEVector muP4;   // used in jets selection
   edm::Handle<edm::View<pat::Muon> > muonHandle;
   e.getByToken(muonCollection_, muonHandle);
@@ -342,6 +350,7 @@ bool TrigAnalyzerMiniAOD::fillEvent(const edm::Event& e, const edm::EventSetup& 
   if (nMu_ > 0) {
     edm::View<pat::Muon>::const_iterator iMu = muonHandle->begin();
     muPt_    = iMu->pt();
+    muEta_   = iMu->eta();
     muP4     = iMu->p4();
   }
   
@@ -350,11 +359,13 @@ bool TrigAnalyzerMiniAOD::fillEvent(const edm::Event& e, const edm::EventSetup& 
   ROOT::Math::PtEtaPhiEVector lepP4;   // used in jets selection
   if (nLep_ != 1) return false;        // preselection of nLep == 1.
   if (nEle_ > 0) {
-    lepPt_ = elePt_;
-    lepP4  = eleP4;
+    lepPt_  = elePt_;
+    lepEta_ = eleEta_;
+    lepP4   = eleP4;
   } else {
-    lepPt_ = muPt_;
-    lepP4  = muP4;
+    lepPt_  = muPt_;
+    lepEta_ = muEta_;
+    lepP4   = muP4;
   }
   if (lepPt_ < 15.0) return false;     // preselection of lepPt >= 15 GeV.
   
@@ -390,7 +401,10 @@ bool TrigAnalyzerMiniAOD::fillEvent(const edm::Event& e, const edm::EventSetup& 
   if (centralJet30clean.empty()) return false; // preselection of at least 1 jet with Pt >= 30 GeV, |eta| < 2.4 and dR(jet, lep) > 0.4
   for (std::vector<pat::Jet>::iterator itj = centralJet30clean.begin(); itj != centralJet30clean.end(); ++itj) {
     nJet_++;
-    if(itj->pt() > leadJetPt_) leadJetPt_ = itj->pt();
+    if(itj->pt() > leadJetPt_) {
+      leadJetPt_  = itj->pt();
+      leadJetEta_ = itj->eta();
+    }
     // evaluation of HT
     HT_ += itj->pt();
   }
@@ -438,6 +452,7 @@ bool TrigAnalyzerMiniAOD::fillEvent(const edm::Event& e, const edm::EventSetup& 
   blTriggBits_[idMuOR_]  = getTriggRes(idTriggMuOR_);
   blTriggBits_[idMetOR_] = getTriggRes(idTriggMetOR_);
   
+  if ( !getTriggRes(idTriggEleAll_) ) return false; // preselection of at least 1 trigger result "true"
   
   return true;
 }
