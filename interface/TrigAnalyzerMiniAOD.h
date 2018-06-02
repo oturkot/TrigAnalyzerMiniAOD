@@ -67,17 +67,21 @@ class TrigAnalyzerMiniAOD : public edm::EDAnalyzer {
   edm::EDGetTokenT<edm::View<pat::Electron> > electronCollection_;
   Int_t       nEle_;
   float       elePt_;
+  float       eleEta_;
   
   edm::EDGetTokenT<edm::View<pat::Muon> >     muonCollection_;
   Int_t       nMu_;
   float       muPt_;
+  float       muEta_;
   
   Int_t       nLep_;
   float       lepPt_;
+  float       lepEta_;
   
   edm::EDGetTokenT<edm::View<pat::Jet> >      jetsCollection_;
   Int_t       nJet_;
   float       leadJetPt_;
+  float       leadJetEta_;
   
   edm::EDGetTokenT<edm::View<pat::MET> >      pfMetToken_;
   float       MET_;
@@ -89,6 +93,7 @@ class TrigAnalyzerMiniAOD : public edm::EDAnalyzer {
   std::vector<std::string> stTriggNames_;
 //  std::vector<bool>        blTriggBits_;
   bool                     blTriggBits_[nTriggMAX]; // blTriggBits_ elements should never reallocate so their references could be used for setting tree_ branches -> using not vector but array.
+  std::vector<size_t>      idTriggEleAll_;
   
   size_t  idEleOR_, idMuOR_, idMetOR_;
   std::vector<size_t>      idTriggEleOR_;
